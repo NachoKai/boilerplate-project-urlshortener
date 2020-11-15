@@ -4,7 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const shortId = require("shortid");
-let uuid = shortId.generate();
+const uuid = shortId.generate();
 const jsonParser = bodyParser.json();
 const port = process.env.PORT || 3000;
 const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
@@ -38,10 +38,10 @@ app.get("/", (req, res) => {
 });
 
 app.post("/api/shorturl/new/", jsonParser, (req, res) => {
-  let requestedUrl = req.body.url;
+  const requestedUrl = req.body.url;
 
-  let newURL = new ShortUrl({
-    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
+  const newURL = new ShortUrl({
+    short_url: __dirname + "/api/shorturl/" + uuid,
     original_url: requestedUrl,
     uuid: uuid,
   });
@@ -62,10 +62,10 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
 });
 
 app.get("/api/shorturl/:uuid", (req, res) => {
-  let userGeneratedUuid = req.params.uuid;
+  const userGeneratedUuid = req.params.uuid;
 
-  ShortUrl.find({ uuid: userGeneratedUuid }).then(foundUrl => {
-    res.redirect(foundUrl[0].original_url);
+  ShortUrl.findOne({ uuid: userGeneratedUuid }).then(foundUrl => {
+    res.redirect(foundUrl.original_url);
   });
 });
 
