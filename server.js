@@ -22,7 +22,6 @@ const ShortUrl = mongoose.model(
     short_url: String,
     original_url: String,
     uuid: String,
-    saved: Boolean,
   })
 );
 
@@ -50,27 +49,23 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   newURL.save((err, data) => {
     if (err) {
       console.error(err);
-      throw err;
+    } else if (requestedUrl.match(regex)) {
+      res.json({
+        short_url: newURL.short_url,
+        original_url: newURL.original_url,
+        uuid: newURL.uuid,
+      });
     } else {
-      if (requestedUrl.match(regex)) {
-        res.json({
-          short_url: newURL.short_url,
-          original_url: newURL.original_url,
-          uuid: newURL.uuid,
-          saved: true,
-        });
-      } else {
-        res.json({ error: "invalid url" });
-      }
+      res.json({ error: "invalid url" });
     }
   });
 });
 
 app.get("/api/shorturl/:uuid", (req, res) => {
   let userGeneratedUuid = req.params.uuid;
-  ShortUrl.find({ uuid: userGeneratedUuid }).then(data => {
-    let urlForRedirect = data[0];
-    res.redirect(urlForRedirect.original_url);
+
+  ShortUrl.find({ uuid: userGeneratedUuid }).then(foundUrl => {
+    res.redirect(foundUrl[0].original_url);
   });
 });
 
