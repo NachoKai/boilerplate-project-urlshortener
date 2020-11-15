@@ -41,19 +41,19 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   let requestedUrl = req.body.url;
 
   let newURL = new ShortUrl({
-    short_url: "https://polar-castle-46284.herokuapp.com/api/shorturl/" + uuid,
+    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
     original_url: requestedUrl,
     uuid: uuid,
   });
 
-  newURL.save((err, data) => {
+  newURL.save((err, url) => {
     if (err) {
       console.error(err);
     } else if (requestedUrl.match(regex)) {
       res.json({
-        short_url: newURL.short_url,
-        original_url: newURL.original_url,
-        uuid: newURL.uuid,
+        short_url: url.short_url,
+        original_url: url.original_url,
+        uuid: url.uuid,
       });
     } else {
       res.json({ error: "invalid url" });
