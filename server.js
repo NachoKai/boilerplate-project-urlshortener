@@ -41,7 +41,7 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   let requestedUrl = req.body.url;
 
   let newURL = new ShortUrl({
-    short_url: __dirname + "/api/shorturl/" + uuid,
+    short_url: "https://polar-castle-46284.herokuapp.com/api/shorturl/" + uuid,
     original_url: requestedUrl,
     uuid: uuid,
   });
