@@ -4,7 +4,6 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const shortId = require("shortid");
-const uuid = shortId.generate();
 const jsonParser = bodyParser.json();
 const port = process.env.PORT || 3000;
 const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
@@ -39,9 +38,10 @@ app.get("/", (req, res) => {
 
 app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   const requestedUrl = req.body.url;
+  let uuid = shortId.generate();
 
   const newURL = new ShortUrl({
-    short_url: __dirname + "/api/shorturl/" + uuid,
+    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
     original_url: requestedUrl,
     uuid: uuid,
   });
