@@ -1,10 +1,11 @@
 body {
+  background: #222;
+  color: #eee;
   font-family: Arial, sans-serif;
   font-size: 16px;
-  color: #222;
-  background-color: #fff;
   text-align: center;
   line-height: 1.4em;
+  height: 100vh;
 }
 
 main {
@@ -43,4 +44,29 @@ input {
 input[type='text'] {
   width: 220px;
   text-align: center;
+}
+
+fieldset{
+  border-radius: 50px;
+}
+
+a{
+  color: #fff;
+}
+
+.button{
+  border-radius: 8px;
+  padding: 8px;
+  border: none;
+  font-weight: bold;
+}
+
+.button:hover{
+  cursor: pointer;
+}
+
+#url_input{
+  border-radius: 8px;
+  padding: 8px;
+  border: none;
 }
