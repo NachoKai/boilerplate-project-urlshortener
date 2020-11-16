@@ -56,7 +56,7 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
         uuid: url.uuid,
       });
     } else {
-      res.json({ error: "invalid url" });
+      res.json({ error: "Invalid URL" });
     }
   });
 });
