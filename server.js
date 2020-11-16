@@ -1,177 +1,74 @@
-// set up an express app
-const port = 3000;
-
-/** require dependencies
- * express to handle routing
- * dotenv to access .env variables locally
- * dns to check the validity of the input URL
- * body parser to properly retrieve the form's value
- * mongodb and mongoose to handle the database logic
- */
-const express = require('express');
-require('dotenv').config();
-const dns = require('dns');
-const bodyParser = require('body-parser');
-const mongodb = require('mongodb');
-const mongoose = require('mongoose');
-
-// set up an express app
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const shortId = require("shortid");
+const jsonParser = bodyParser.json();
+const port = process.env.PORT || 3000;
+const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+const regex = new RegExp(expression);
 const app = express();
 
-// mount the body parser middleware
+mongoose.connect(process.env.DB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const ShortUrl = mongoose.model(
+  "ShortUrl",
+  new mongoose.Schema({
+    short_url: String,
+    original_url: String,
+    uuid: String,
+  })
+);
+
+app.use(cors());
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// render the stylesheet as found in the public folder
-app.use(express.static(`${__dirname}/public`));
+app.use(bodyParser.json());
 
-// MONGO && MONGOOSE
-// connect the application to the mLab database through the process variable detailing the URI code
-mongoose.connect(process.env.DB_URI, {
-  useNewUrlParser: true
+app.use("/public", express.static(`${process.cwd()}/public`));
+
+app.get("/", (req, res) => {
+  res.sendFile(process.cwd() + "/views/index.html");
 });
 
-// define a schema for the url(s) documents, to be stored and read in the database
-const { Schema } = mongoose;
-// each instance shall have two fields
-// a string representing the original URL
-// an integer for the shortened counterpart
-const urlSchema = new Schema({
-  original_url: {
-    type: String,
-    required: true
-  },
-  short_url: {
-    type: Number,
-    required: true,
-    default: 0
-  }
-});
+app.post("/api/shorturl/new/", jsonParser, (req, res) => {
+  const requestedUrl = req.body.url;
+  let uuid = shortId.generate();
 
-// define a model, on which all instances (documents) will be based
-const Url = mongoose.model('Url', urlSchema);
+  const newURL = new ShortUrl({
+    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
+    original_url: requestedUrl,
+    uuid: uuid,
+  });
 
-// EXPRESS && ROUTING
-// in the root path render the HTML file as found in the views folder
-app.get('/', (req, res) => {
-  res.sendFile(`${__dirname}/views/index.html`);
-});
-
-// following a post request in the selected path, create and save a document
-app.post('/api/shorturl', (req, res) => {
-  /** path's logic
-   * use the dns module to check if the input valid represents a valid url
-   *    valid
-   *    use the findOne() method to check if the database already contains a matching document
-   *        not found
-   *        use the estimatedDocumentCount() method to assess the number of items in the database
-   *        create a new entry, using the length to create a unique short_url value
-   *        save the entry
-   *        display pertinent information
-   *
-   *        found
-   *        display pertinent information
-   *
-   *    invalid
-   *    display an error message
-   */
-
-  // store in a variable the requested url
-  const urlRequest = req.body.url;
-
-  // retrieve the hostname removing from the url (the section between https:// and relative paths)
-  const hostname = urlRequest
-    .replace(/http[s]?\:\/\//, '')
-    .replace(/\/(.+)?/, '');
-
-  // use the hostname in the lookup() function
-  dns.lookup(hostname, (lookupErr, addresses) => {
-    if (lookupErr) {
-      console.log('lookup() error');
-    }
-    // lookup() returns either _undefined_ or _an IP address_
-    // if undefined , send a JSON object detailing the invalid nature of the request
-    if (!addresses) {
-      res.json({
-        error: 'invalid URL'
-      });
-    } else {
-      // if an IP address is returned
-      // check if the database alread contains a matching document
-      Url.findOne({
-        original_url: urlRequest
-      }, (findOneErr, urlFound) => {
-        if (findOneErr) {
-          console.log('findOne() error');
-        }
-        // findOne() returns either _null_ or _a document_
-        // depending on whether or not a document matches the specified property value pair(s)
-        // if null, create a new document
-        if (!urlFound) {
-          // check the number of documents in the database
-          Url.estimatedDocumentCount((countErr, count) => {
-            if (countErr) {
-              res.send('estimatedDocumentCount() error');
-            }
-            // create a new document
-            // for the short_url field increment the number of documents
-            const url = new Url({
-              original_url: urlRequest,
-              short_url: count + 1
-            });
-
-            // save the document in the database
-            url.save((saveErr, urlSaved) => {
-              if (saveErr) {
-                res.send('save() error');
-              }
-              // send a json object detailing the values of the saved url
-              res.json({
-                original_url: urlSaved.original_url,
-                short_url: urlSaved.short_url
-              });
-            // save block
-            });
-          // count block
-          });
-        // url not found block
-        } else {
-          // findOne() returns an object
-          // display its information
-          res.json({
-            original_url: urlFound.original_url,
-            short_url: urlFound.short_url
-          });
-        } // url found block
-      }); // findOne() block
-    } // vaid lookup block
-  }); // lookup/(block)
-}); // post request block
-
-// following a get request in the selected path, re-route the visitor toward the unshortened url
-app.get('/api/shorturl/:shorturl', (req, res) => {
-  // retrieve the requested short url through the request parameter
-  const { shorturl } = req.params;
-
-  // lookf for a document in the database with the matching shorturl
-  Url.findOne({
-    short_url: shorturl
-  }, (err, urlFound) => {
+  newURL.save((err, url) => {
     if (err) {
-      console.log('findOne() error');
-    }
-    // once again, findOne() can either return _null_ or _an object_
-    // returns null, return a message relating the lack of shortened url
-    if (!urlFound) {
+      console.error(err);
+    } else if (requestedUrl.match(regex)) {
       res.json({
-        error: 'no matching URL'
+        short_url: url.short_url,
+        original_url: url.original_url,
+        uuid: url.uuid,
       });
     } else {
-      // returns a document matching the short url, forward toward the unshortened url
-      res.redirect(urlFound.original_url);
+      res.json({ error: "Invalid URL" });
     }
-  }); // findOne() block
-}); // get request block
+  });
+});
 
-// listen in the selected port and render the simple application
-app.listen(port);
-console.log(`listening on port ${port}`);
+app.get("/api/shorturl/:uuid", (req, res) => {
+  const userGeneratedUuid = req.params.uuid;
+
+  ShortUrl.findOne({ uuid: userGeneratedUuid }).then(foundUrl => {
+    res.redirect(foundUrl.original_url);
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
+});
