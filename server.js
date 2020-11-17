@@ -49,10 +49,8 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   newURL.save((err, url) => {
     if (url.original_url === "ftp:/john-doe.org") {
       res.json({ error: "Invalid URL" });
-    } 
-    if (err) {
-      console.error(err);
-    } else if (requestedUrl.match(regex)) {
+    }
+    if (requestedUrl.match(regex)) {
       res.json({
         short_url: url.short_url,
         original_url: url.original_url,
