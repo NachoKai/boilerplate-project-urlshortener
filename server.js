@@ -49,15 +49,11 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   newURL.save((err, url) => {
     if (err) console.error(err);
 
-    if (requestedUrl.match(regex)) {
-      res.json({
-        short_url: url.short_url,
-        original_url: url.original_url,
-        uuid: url.uuid,
-      });
-    } else {
-      res.json({ error: "Invalid URL" });
-    }
+    res.json({
+      short_url: url.short_url,
+      original_url: url.original_url,
+      uuid: url.uuid,
+    });
   });
 });
 
