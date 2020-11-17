@@ -41,7 +41,7 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   let uuid = shortId.generate();
 
   const newURL = new ShortUrl({
-    short_url: __dirname + "/api/shorturl/" + uuid,
+    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
     original_url: requestedUrl,
     uuid: uuid,
   });
@@ -49,7 +49,7 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   newURL.save((err, url) => {
     if (url.original_url === "ftp:/john-doe.org") {
       res.json({ error: "Invalid URL" });
-    }
+    } 
     if (err) {
       console.error(err);
     } else if (requestedUrl.match(regex)) {
