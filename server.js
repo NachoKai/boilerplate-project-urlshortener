@@ -14,7 +14,6 @@ const connection = mongoose.createConnection(process.env.DB_URI, {
   useUnifiedTopology: true,
 });
 
-
 autoIncrement.initialize(connection);
 
 app.use(cors());
@@ -23,10 +22,6 @@ app.use("/public", express.static(`${process.cwd()}/public`));
 
 app.get("/", function (req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
-});
-
-app.get("/api/hello", function (req, res) {
-  res.json({ greeting: "hello API" });
 });
 
 const urlSchema = new Schema({
