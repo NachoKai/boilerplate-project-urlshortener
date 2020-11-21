@@ -1,90 +1,73 @@
-var express = require("express");
-var app = express();
-var mod = require("./module");
-var path = require("path");
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const shortId = require("shortid");
+const jsonParser = bodyParser.json();
+const port = process.env.PORT || 3000;
+const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+const regex = new RegExp(expression);
+const app = express();
 
-app.use(express.static("public"));
-app.use(express.static("views"));
-
-//app.set('views', path.join(__dirname, 'views'));
-
-//using MongoDB and deploying to Herok reference
-//https://community.c9.io/t/setting-up-mongodb/1717
-//https://github.com/FreeCodeCamp/FreeCodeCamp/wiki/Using-MongoDB-And-Deploying-To-Heroku
-// mongod --port 27017 --dbpath=./data
-// Now your Db is running at- mongodb://localhost:27017/my_database_name
-
-var port = process.env.PORT || 8080;
-app.listen(port, function () {
-  console.log("Node.js listening on port " + port);
+mongoose.connect(process.env.DB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
-app.get("/", function (req, res) {
-  console.log("pasó por /");
-  res.render("index.html");
-  mod.render(res, "views", "index.html", []);
-});
-app.get("/lessons", function (req, res) {
-  console.log(req.url);
-  console.log("pasó por lessons");
+const ShortUrl = mongoose.model(
+  "ShortUrl",
+  new mongoose.Schema({
+    short_url: String,
+    original_url: String,
+    uuid: String,
+  })
+);
 
-  res.render("lessons.html", function (err, html) {
-    if (err) {
-      console.log(err);
-    }
-    res.send(html);
+app.use(cors());
+
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(bodyParser.json());
+
+app.use("/public", express.static(`${process.cwd()}/public`));
+
+app.get("/", (req, res) => {
+  res.sendFile(process.cwd() + "/views/index.html");
+});
+
+app.post("/api/shorturl/new/", jsonParser, (req, res) => {
+  const requestedUrl = req.body.url;
+  let uuid = shortId.generate();
+
+  const newURL = new ShortUrl({
+    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
+    original_url: requestedUrl,
+    uuid: uuid,
   });
-});
 
-app.get("*", function (req, res) {
-  var usageReq = false;
-  var urlPassed = req.url;
-  urlPassed = urlPassed.substring(1, urlPassed.length);
-
-  if (urlPassed.length > 6 && urlPassed.substring(0, 5) == "usage") {
-    console.log("detectó usage");
-    usageReq = true;
-    urlPassed = urlPassed.substring(6, urlPassed.length);
-  }
-
-  console.log(urlPassed);
-  var expected = mod.seeIfExpected(urlPassed);
-  console.log(expected);
-  mod.processInfo(expected, urlPassed, function (answer) {
-    console.log("showing answer");
-    console.log(answer);
-    if (
-      answer.found == false &&
-      answer.jsonRes == true &&
-      answer.info != "inserted"
-    ) {
+  newURL.save((err, url) => {
+    if (err) console.err(err);
+    if (requestedUrl.match(regex)) {
       res.json({
-        error: answer.info,
+        short_url: url.short_url,
+        original_url: url.original_url,
+        uuid: url.uuid,
       });
     } else {
-      if (usageReq == true) {
-        if (answer.found == false) {
-          res.render("render.html", answer);
-        } else {
-          res.render("render.html", answer);
-        }
-      } else {
-        if (answer.jsonRes == true) {
-          res.json({
-            long_url: answer.url,
-            short_url: answer.id,
-          });
-        } else {
-          if (/https/g.test(answer.url)) {
-            res.redirect(answer.url);
-          } else {
-            console.log("le falta https");
-            var newUrl = "https://" + answer.url;
-            console.log(newUrl);
-            res.redirect(newUrl);
-          }
-        }
-      }
+      res.json({ error: "Invalid URL" });
     }
   });
+});
+
+app.get("/api/shorturl/:uuid", (req, res) => {
+  const userGeneratedUuid = req.params.uuid;
+
+  ShortUrl.findOne({ uuid: userGeneratedUuid }).then(foundUrl => {
+    res.redirect(foundUrl.original_url);
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Listening on port ${port}`);
 });
