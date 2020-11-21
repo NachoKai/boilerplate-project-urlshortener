@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const shortId = require("shortid");
 const jsonParser = bodyParser.json();
 const port = process.env.PORT || 3000;
-const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+const expression = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/gi;
 const regex = new RegExp(expression);
 const app = express();
 
@@ -47,8 +47,9 @@ app.post("/api/shorturl/new/", jsonParser, (req, res) => {
   });
 
   newURL.save((err, url) => {
-    if (err) console.err(err);
-    if (requestedUrl.match(regex)) {
+    if (err) {
+      console.error(err);
+    } else if (requestedUrl.match(regex)) {
       res.json({
         short_url: url.short_url,
         original_url: url.original_url,
@@ -68,6 +69,21 @@ app.get("/api/shorturl/:uuid", (req, res) => {
   });
 });
 
+app.route('/api/shorturl/new').post((req,res)=> {
+  ...
+    let urlMatch = // Match the URL to expected structure or not
+
+    // Lookup the matched URL
+    dns.lookup(urlMatch, (err,add,fam) => {
+      // If the URL does not exist, return expected error
+      if (err) return res.json({"error": "invalid URL"});
+   
+      // Save to database, otherwise.
+    })
+  });
+});
+
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
 });
+
