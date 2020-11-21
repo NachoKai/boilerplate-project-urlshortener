@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const shortId = require("shortid");
 const jsonParser = bodyParser.json();
 const port = process.env.PORT || 3000;
-const expression = /(https?:\/\/)?([\w\-])+\.{1}([a-zA-Z]{2,63})([\/\w-]*)*\/?\??([^#\n\r]*)?#?([^\n\r]*)/gi;
+const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
 const regex = new RegExp(expression);
 const app = express();
 
