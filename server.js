@@ -4,6 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const dns = require("dns");
 const mongoose = require("mongoose");
+const autoIncrement = require("mongoose-auto-increment");
 const app = express();
 const port = process.env.PORT || 3000;
 const { Schema } = mongoose;
@@ -13,7 +14,6 @@ const connection = mongoose.createConnection(process.env.DB_URI, {
   useUnifiedTopology: true,
 });
 
-const autoIncrement = require("mongoose-auto-increment");
 
 autoIncrement.initialize(connection);
 
