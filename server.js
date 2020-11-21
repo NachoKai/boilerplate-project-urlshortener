@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 const shortId = require("shortid");
 const jsonParser = bodyParser.json();
 const port = process.env.PORT || 3000;
-const expression = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/gi;
+const expression = /(https?:\/\/)?([\w\-])+\.{1}([a-zA-Z]{2,63})([\/\w-]*)*\/?\??([^#\n\r]*)?#?([^\n\r]*)/gi;
 const regex = new RegExp(expression);
 const app = express();
 
