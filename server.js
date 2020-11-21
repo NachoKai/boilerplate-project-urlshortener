@@ -1,73 +1,79 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const mongoose = require("mongoose");
-const bodyParser = require("body-parser");
-const shortId = require("shortid");
-const jsonParser = bodyParser.json();
-const port = process.env.PORT || 3000;
-const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
-const regex = new RegExp(expression);
 const app = express();
 
-mongoose.connect(process.env.DB_URI, {
+const bodyParser = require("body-parser");
+const dns = require("dns");
+
+const mongoose = require("mongoose");
+const { Schema } = mongoose;
+const connection = mongoose.createConnection(process.env.DB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
+const autoIncrement = require("mongoose-auto-increment");
+autoIncrement.initialize(connection);
 
-const ShortUrl = mongoose.model(
-  "ShortUrl",
-  new mongoose.Schema({
-    short_url: String,
-    original_url: String,
-    uuid: String,
-  })
-);
+// Basic Configuration
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 
-app.use(bodyParser.urlencoded({ extended: false }));
-
-app.use(bodyParser.json());
-
 app.use("/public", express.static(`${process.cwd()}/public`));
 
-app.get("/", (req, res) => {
+app.get("/", function (req, res) {
   res.sendFile(process.cwd() + "/views/index.html");
 });
 
-app.post("/api/shorturl/new/", jsonParser, (req, res) => {
-  const requestedUrl = req.body.url;
-  let uuid = shortId.generate();
+// Your first API endpoint
+app.get("/api/hello", function (req, res) {
+  res.json({ greeting: "hello API" });
+});
 
-  const newURL = new ShortUrl({
-    short_url: "https://corty.herokuapp.com/api/shorturl/" + uuid,
-    original_url: requestedUrl,
-    uuid: uuid,
-  });
+// Solution (Author: Pratik Var)
+const urlSchema = new Schema({
+  url: String,
+});
+urlSchema.plugin(autoIncrement.plugin, { model: "URL", field: "urlID" });
+const URL = connection.model("URL", urlSchema);
 
-  newURL.save((err, url) => {
-    if (err) console.err(err);
-    if (requestedUrl.match(regex)) {
-      res.json({
-        short_url: url.short_url,
-        original_url: url.original_url,
-        uuid: url.uuid,
+app.use(bodyParser.urlencoded({ extended: false }));
+app.post("/api/shorturl/new", (req, res) => {
+  // check if valid URL
+  const reqURL = req.body.url;
+  let urlMatch =
+    reqURL.match(/(?<=(http|https):\/\/)[^\/]+/) &&
+    reqURL.match(/(?<=(http|https):\/\/)[^\/]+/)[0];
+  urlMatch = !urlMatch ? "url-to-fail" : urlMatch;
+  dns.lookup(urlMatch, (err, add, fam) => {
+    if (err) res.json({ error: "invalid URL" });
+    else {
+      // check if URL already exists in database
+      URL.findOne({ url: req.body.url }).exec((err, doc) => {
+        if (err) return console.error(err);
+        if (doc !== null) {
+          res.json({ original_url: req.body.url, short_url: doc.urlID });
+        } else {
+          // if not, create new record for URL
+          let urlObj = new URL({ url: req.body.url });
+          urlObj.save(err => {
+            if (err) return console.error(err);
+            res.json({ original_url: req.body.url, short_url: urlObj.urlID });
+          });
+        }
       });
-    } else {
-      res.json({ error: "Invalid URL" });
     }
   });
 });
-
-app.get("/api/shorturl/:uuid", (req, res) => {
-  const userGeneratedUuid = req.params.uuid;
-
-  ShortUrl.findOne({ uuid: userGeneratedUuid }).then(foundUrl => {
-    res.redirect(foundUrl.original_url);
+app.get("/api/shorturl/:id", (req, res) => {
+  URL.findOne({ urlID: req.params.id }).exec((err, doc) => {
+    if (err) return console.error(err);
+    if (doc !== null) res.redirect(doc.url);
+    else res.send("Not found");
   });
 });
 
-app.listen(port, () => {
+app.listen(port, function () {
   console.log(`Listening on port ${port}`);
 });
