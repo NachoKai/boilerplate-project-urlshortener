@@ -1,10 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const app = express();
 const bodyParser = require("body-parser");
 const dns = require("dns");
 const mongoose = require("mongoose");
+const app = express();
 const port = process.env.PORT || 3000;
 const { Schema } = mongoose;
 
